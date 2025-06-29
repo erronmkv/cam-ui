@@ -17,16 +17,6 @@ const CameraPreview = ({ videoRef }: CameraPreviewProps) => {
             muted
             className="w-full h-full object-cover"
           />
-          
-          {/* Interface overlay */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <div className="text-gray-400 text-sm font-medium mb-2 text-center">interface:</div>
-            <div className="w-16 h-12 border-2 border-gray-300 rounded-sm relative">
-              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                <div className="w-3 h-2 border border-gray-300 rounded-t-sm bg-white"></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

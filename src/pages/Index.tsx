@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import CameraControls from '@/components/CameraControls';
 import CameraPreview from '@/components/CameraPreview'; 
@@ -52,6 +53,7 @@ const Index = () => {
       setIsDevicesLoaded(true);
     } catch (error) {
       console.error('Error getting devices:', error);
+      setIsDevicesLoaded(true); // Still show controls even if device enumeration fails
     }
   };
 
@@ -82,7 +84,7 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (isDevicesLoaded && (selectedCamera || selectedAudio || resolution)) {
+    if (isDevicesLoaded) {
       initializeCamera();
     }
   }, [selectedCamera, selectedAudio, resolution, captureMode, isDevicesLoaded]);
@@ -115,36 +117,58 @@ const Index = () => {
   const startRecording = () => {
     if (!streamRef.current) return;
 
-    const options = {
-      mimeType: 'video/webm;codecs=vp9'
+    // Try different codec options for better compatibility
+    const codecOptions = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus', 
+      'video/webm',
+      'video/mp4'
+    ];
+
+    let mediaRecorder: MediaRecorder | null = null;
+    
+    for (const mimeType of codecOptions) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        try {
+          mediaRecorder = new MediaRecorder(streamRef.current, { mimeType });
+          break;
+        } catch (error) {
+          console.log(`Failed to create MediaRecorder with ${mimeType}:`, error);
+        }
+      }
+    }
+
+    if (!mediaRecorder) {
+      // Fallback without specifying codec
+      try {
+        mediaRecorder = new MediaRecorder(streamRef.current);
+      } catch (error) {
+        console.error('Failed to create MediaRecorder:', error);
+        return;
+      }
+    }
+
+    const chunks: Blob[] = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data);
+      }
     };
 
-    try {
-      const mediaRecorder = new MediaRecorder(streamRef.current, options);
-      const chunks: Blob[] = [];
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mediaRecorder?.mimeType || 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video-${new Date().getTime()}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `video-${new Date().getTime()}.webm`;
-        a.click();
-        URL.revokeObjectURL(url);
-      };
-
-      mediaRecorder.start();
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-    }
+    mediaRecorder.start();
+    mediaRecorderRef.current = mediaRecorder;
+    setIsRecording(true);
   };
 
   const stopRecording = () => {
@@ -168,13 +192,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {isDevicesLoaded && selectedCamera && selectedAudio ? (
+      {isDevicesLoaded ? (
         <CameraControls
           resolution={resolution}
           setResolution={setResolution}
-          selectedCamera={selectedCamera}
+          selectedCamera={selectedCamera || (devices.cameras[0]?.deviceId || '')}
           setSelectedCamera={setSelectedCamera}
-          selectedAudio={selectedAudio}
+          selectedAudio={selectedAudio || (devices.audioDevices[0]?.deviceId || '')}
           setSelectedAudio={setSelectedAudio}
           cameras={devices.cameras}
           audioDevices={devices.audioDevices}
