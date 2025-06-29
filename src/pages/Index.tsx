@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import CameraControls from '@/components/CameraControls';
 import CameraPreview from '@/components/CameraPreview'; 
@@ -7,13 +6,14 @@ import CaptureControls from '@/components/CaptureControls';
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [captureMode, setCaptureMode] = useState<'photo' | 'video'>('photo');
-  const [selectedCamera, setSelectedCamera] = useState<string>('');
-  const [selectedAudio, setSelectedAudio] = useState<string>('');
+  const [selectedCamera, setSelectedCamera] = useState<string | undefined>(undefined);
+  const [selectedAudio, setSelectedAudio] = useState<string | undefined>(undefined);
   const [resolution, setResolution] = useState<'720p' | '1080p'>('720p');
   const [devices, setDevices] = useState<{
     cameras: MediaDeviceInfo[];
     audioDevices: MediaDeviceInfo[];
   }>({ cameras: [], audioDevices: [] });
+  const [isDevicesLoaded, setIsDevicesLoaded] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -32,9 +32,13 @@ const Index = () => {
 
   const getDevices = async () => {
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter(device => device.kind === 'videoinput');
-      const audioDevices = devices.filter(device => device.kind === 'audioinput');
+      const deviceList = await navigator.mediaDevices.enumerateDevices();
+      const cameras = deviceList.filter(device => 
+        device.kind === 'videoinput' && device.deviceId
+      );
+      const audioDevices = deviceList.filter(device => 
+        device.kind === 'audioinput' && device.deviceId
+      );
       
       setDevices({ cameras, audioDevices });
       
@@ -44,6 +48,8 @@ const Index = () => {
       if (audioDevices.length > 0 && !selectedAudio) {
         setSelectedAudio(audioDevices[0].deviceId);
       }
+      
+      setIsDevicesLoaded(true);
     } catch (error) {
       console.error('Error getting devices:', error);
     }
@@ -76,10 +82,10 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (selectedCamera || resolution) {
+    if (isDevicesLoaded && (selectedCamera || selectedAudio || resolution)) {
       initializeCamera();
     }
-  }, [selectedCamera, selectedAudio, resolution, captureMode]);
+  }, [selectedCamera, selectedAudio, resolution, captureMode, isDevicesLoaded]);
 
   const capturePhoto = () => {
     if (!videoRef.current) return;
@@ -162,16 +168,24 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <CameraControls
-        resolution={resolution}
-        setResolution={setResolution}
-        selectedCamera={selectedCamera}
-        setSelectedCamera={setSelectedCamera}
-        selectedAudio={selectedAudio}
-        setSelectedAudio={setSelectedAudio}
-        cameras={devices.cameras}
-        audioDevices={devices.audioDevices}
-      />
+      {isDevicesLoaded && selectedCamera && selectedAudio ? (
+        <CameraControls
+          resolution={resolution}
+          setResolution={setResolution}
+          selectedCamera={selectedCamera}
+          setSelectedCamera={setSelectedCamera}
+          selectedAudio={selectedAudio}
+          setSelectedAudio={setSelectedAudio}
+          cameras={devices.cameras}
+          audioDevices={devices.audioDevices}
+        />
+      ) : (
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-center">
+            <span className="text-gray-500">Loading camera...</span>
+          </div>
+        </div>
+      )}
       
       <CameraPreview videoRef={videoRef} />
       
