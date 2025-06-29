@@ -16,6 +16,7 @@ const Index = () => {
     audioDevices: MediaDeviceInfo[];
   }>({ cameras: [], audioDevices: [] });
   const [isDevicesLoaded, setIsDevicesLoaded] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -110,6 +111,11 @@ const Index = () => {
     canvas.height = videoRef.current.videoHeight;
     
     if (context) {
+      if (isFlipped) {
+        // Flip horizontally
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+      }
       context.drawImage(videoRef.current, 0, 0);
       
       canvas.toBlob((blob) => {
@@ -244,14 +250,22 @@ const Index = () => {
         </div>
       )}
       
-      <CameraPreview videoRef={videoRef} isRecording={isRecording} />
+      <CameraPreview videoRef={videoRef} isRecording={isRecording} isFlipped={isFlipped} />
       
-      <CaptureControls
-        captureMode={captureMode}
-        setCaptureMode={setCaptureMode}
-        isRecording={isRecording}
-        onCapture={handleCapture}
-      />
+      <div className="flex flex-row items-center justify-center mt-4">
+        <button
+          className="mr-4 px-4 py-2 bg-black text-white rounded"
+          onClick={() => setIsFlipped(f => !f)}
+        >
+          Flip Camera
+        </button>
+        <CaptureControls
+          captureMode={captureMode}
+          setCaptureMode={setCaptureMode}
+          isRecording={isRecording}
+          onCapture={handleCapture}
+        />
+      </div>
     </div>
   );
 };
