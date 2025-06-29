@@ -1,5 +1,7 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 interface CameraControlsProps {
   resolution: '720p' | '1080p';
@@ -10,6 +12,7 @@ interface CameraControlsProps {
   setSelectedAudio: (audio: string) => void;
   cameras: MediaDeviceInfo[];
   audioDevices: MediaDeviceInfo[];
+  onClose: () => void;
 }
 
 const CameraControls = ({
@@ -20,13 +23,14 @@ const CameraControls = ({
   selectedAudio,
   setSelectedAudio,
   cameras,
-  audioDevices
+  audioDevices,
+  onClose
 }: CameraControlsProps) => {
   return (
     <div className="bg-white border-b border-gray-200 p-4">
-      <div className="flex gap-4 items-center justify-center max-w-4xl mx-auto">
+      <div className="flex gap-4 items-center justify-center max-w-4xl mx-auto relative">
         <div className="bg-gray-900 text-white px-3 py-1.5 rounded-md text-sm font-medium">
-          camera
+          Cam UI
         </div>
         
         <Select value={resolution} onValueChange={(value: '720p' | '1080p') => setResolution(value)}>
@@ -64,6 +68,15 @@ const CameraControls = ({
             ))}
           </SelectContent>
         </Select>
+
+        <Button
+          onClick={onClose}
+          variant="ghost"
+          size="icon"
+          className="absolute top-0 right-0 text-gray-600 hover:text-gray-900"
+        >
+          <X size={20} />
+        </Button>
       </div>
     </div>
   );

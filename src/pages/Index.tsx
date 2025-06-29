@@ -1,10 +1,11 @@
-
 import { useState, useRef, useEffect } from 'react';
 import CameraControls from '@/components/CameraControls';
 import CameraPreview from '@/components/CameraPreview'; 
 import CaptureControls from '@/components/CaptureControls';
+import IntroScreen from '@/components/IntroScreen';
 
 const Index = () => {
+  const [showIntro, setShowIntro] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [captureMode, setCaptureMode] = useState<'photo' | 'video'>('photo');
   const [selectedCamera, setSelectedCamera] = useState<string | undefined>(undefined);
@@ -178,6 +179,23 @@ const Index = () => {
     }
   };
 
+  const handleLaunchApp = () => {
+    setShowIntro(false);
+  };
+
+  const handleCloseApp = () => {
+    // Stop any active streams
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    // Stop recording if active
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+    setShowIntro(true);
+  };
+
   const handleCapture = () => {
     if (captureMode === 'photo') {
       capturePhoto();
@@ -189,6 +207,10 @@ const Index = () => {
       }
     }
   };
+
+  if (showIntro) {
+    return <IntroScreen onLaunch={handleLaunchApp} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -202,6 +224,7 @@ const Index = () => {
           setSelectedAudio={setSelectedAudio}
           cameras={devices.cameras}
           audioDevices={devices.audioDevices}
+          onClose={handleCloseApp}
         />
       ) : (
         <div className="bg-white border-b border-gray-200 p-4">
@@ -211,7 +234,7 @@ const Index = () => {
         </div>
       )}
       
-      <CameraPreview videoRef={videoRef} />
+      <CameraPreview videoRef={videoRef} isRecording={isRecording} />
       
       <CaptureControls
         captureMode={captureMode}
