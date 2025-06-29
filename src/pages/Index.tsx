@@ -32,6 +32,16 @@ const Index = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // Request audio permission once to ensure audio devices are listed
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+        getDevices();
+      })
+      .catch(() => getDevices());
+  }, []);
+
   const getDevices = async () => {
     try {
       const deviceList = await navigator.mediaDevices.enumerateDevices();
